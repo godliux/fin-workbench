@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>金融早盘工作台</title>
+<style>
+  :root{
+    --navy:#15315B; --navy2:#1d3f73; --gold:#C9A24A; --bg:#EEF1F6; --card:#FFFFFF;
+    --line:#E2E7EF; --txt:#1c2530; --sub:#6b7787; --up:#D4380D; --down:#237804;
+    --warn:#C0392B; --ok:#2E7D32; --shadow:0 1px 3px rgba(20,40,80,.08),0 4px 14px rgba(20,40,80,.06);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--txt); font-size:16px; line-height:1.5;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:14px 14px 90px;}
+  header{
+    background:linear-gradient(135deg,var(--navy),var(--navy2)); color:#fff;
+    border-radius:14px; padding:16px 18px; box-shadow:var(--shadow);
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px; justify-content:space-between;
+  }
+  header h1{font-size:19px;margin:0;font-weight:700;letter-spacing:.5px;}
+  header .sub{font-size:12px;opacity:.8;margin-top:3px;}
+  .head-btns{display:flex;flex-wrap:wrap;gap:8px;}
+  .btn{
+    border:1px solid var(--line); background:#fff; color:var(--navy);
+    border-radius:10px; padding:10px 12px; font-size:14px; cursor:pointer;
+    min-height:44px; display:inline-flex; align-items:center; gap:6px; font-weight:600;
+  }
+  .btn:hover{background:#f4f7fb;}
+  .btn.primary{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .btn.primary:hover{background:var(--navy2);}
+  .btn.gold{background:var(--gold);color:#fff;border-color:var(--gold);}
+  .btn.danger{color:var(--warn);border-color:#f0c9c2;}
+  .btn svg{width:16px;height:16px;}
+  .upd{font-size:12px;opacity:.85;width:100%;margin-top:2px;}
+
+  /* 今日要处理 */
+  .alert-zone{margin-top:14px;}
+  .zone-title{font-size:14px;font-weight:700;color:var(--navy);margin:0 0 8px 2px;display:flex;align-items:center;gap:6px;}
+  .alert-card{
+    background:#fff;border:1px solid var(--line);border-left:4px solid var(--warn);
+    border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:var(--shadow);
+    display:flex;align-items:center;gap:10px;justify-content:space-between;
+  }
+  .alert-card .a-txt{font-size:14px;}
+  .alert-card .a-tag{font-size:11px;background:var(--warn);color:#fff;border-radius:6px;padding:2px 7px;margin-right:6px;}
+  .alert-card .a-handle{min-height:40px;padding:8px 14px;background:var(--navy);color:#fff;border:none;border-radius:9px;font-size:13px;cursor:pointer;font-weight:600;}
+
+  /* 导航 tabs */
+  nav.tabs{display:flex;gap:8px;margin:16px 0 6px;flex-wrap:wrap;}
+  nav.tabs button{
+    flex:1;min-width:120px;min-height:46px;border:1px solid var(--line);background:#fff;color:var(--navy);
+    border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;padding:8px;
+  }
+  nav.tabs button.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+  section.panel{display:none;margin-top:10px;}
+  section.panel.active{display:block;}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow);}
+  .card h3{margin:0 0 10px;font-size:15px;color:var(--navy);display:flex;align-items:center;gap:8px;justify-content:space-between;}
+  .card h3 .meta{font-size:12px;color:var(--sub);font-weight:500;}
+
+  /* 筛选条 */
+  .filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+  .filters button{
+    border:1px solid var(--line);background:#fff;color:var(--sub);border-radius:20px;
+    padding:7px 13px;font-size:13px;cursor:pointer;min-height:38px;
+  }
+  .filters button.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .filters .spacer{flex:1;}
+  .filters select{border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:13px;min-height:38px;background:#fff;color:var(--txt);}
+
+  /* 简报条目 */
+  .item{border:1px solid var(--line);border-radius:11px;padding:12px;margin-bottom:9px;background:#fbfcfe;}
+  .item .i-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
+  .chip{font-size:11px;border-radius:6px;padding:2px 8px;font-weight:700;}
+  .chip.m-us{background:#e8eefc;color:#1d3f73;}
+  .chip.m-eu{background:#eafaf0;color:#237804;}
+  .chip.m-co{background:#fdf3e3;color:#b5791a;}
+  .chip.m-cn{background:#fdeaea;color:#c0392b;}
+  .chip.t-night{background:#eef1f6;color:#55657a;}
+  .chip.t-pred{background:#f3ecfb;color:#6b3fa0;}
+  .chip.dir-bull{background:#fdeaea;color:var(--up);}
+  .chip.dir-bear{background:#eafaf0;color:var(--down);}
+  .item .i-date{font-size:12px;color:var(--sub);margin-left:auto;}
+  .item .i-title{font-size:14px;font-weight:700;margin:2px 0 4px;}
+  .item .i-content{font-size:13.5px;color:#33404f;}
+  .item .i-foot{font-size:12px;color:var(--sub);margin-top:6px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .conf-bar{height:6px;width:70px;background:#e6eaf0;border-radius:4px;overflow:hidden;display:inline-block;vertical-align:middle;}
+  .conf-bar i{display:block;height:100%;background:var(--gold);}
+  .row-act{margin-left:auto;display:flex;gap:6px;}
+  .mini{border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 9px;font-size:12px;cursor:pointer;min-height:34px;color:var(--sub);}
+  .mini.del{color:var(--warn);border-color:#f0c9c2;}
+
+  /* 添加表单 */
+  .addform{display:none;border:1px dashed var(--line);border-radius:11px;padding:12px;margin-bottom:10px;background:#f8fafc;}
+  .addform.show{display:block;}
+  .addform .frow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+  .addform input,.addform select,.addform textarea{
+    border:1px solid var(--line);border-radius:9px;padding:10px;font-size:16px;font-family:inherit;background:#fff;color:var(--txt);
+  }
+  .addform input[type=text],.addform textarea,.addform select{flex:1;min-width:140px;}
+  .addform textarea{min-height:60px;resize:vertical;width:100%;}
+  .addform input.num{width:120px;}
+
+  /* 个股卡片 */
+  .stock-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;}
+  .stock{border:1px solid var(--line);border-radius:13px;padding:14px;background:#fff;box-shadow:var(--shadow);}
+  .stock .s-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .stock .s-name{font-size:16px;font-weight:700;color:var(--navy);}
+  .stock .s-code{font-size:12px;color:var(--sub);}
+  .stock .s-price{font-size:22px;font-weight:800;}
+  .stock .s-chg{font-size:13px;font-weight:700;}
+  .badge{font-size:11px;background:var(--warn);color:#fff;border-radius:6px;padding:3px 8px;font-weight:700;}
+  .news{margin-top:10px;border-top:1px solid var(--line);padding-top:8px;}
+  .news .n-item{font-size:13px;padding:6px 0;border-bottom:1px dashed #eef1f6;display:flex;gap:8px;}
+  .news .n-item .n-date{color:var(--sub);font-size:12px;white-space:nowrap;}
+  .news .n-item .n-type{font-size:11px;border-radius:5px;padding:1px 6px;height:fit-content;}
+  .nt-news{background:#e8eefc;color:#1d3f73;}
+  .nt-ann{background:#fdf3e3;color:#b5791a;}
+  .nt-sen{background:#f3ecfb;color:#6b3fa0;}
+  .s-note{font-size:13px;color:#33404f;margin-top:8px;background:#f8fafc;border-radius:9px;padding:8px 10px;}
+  .s-adv{font-size:13px;font-weight:700;margin-top:8px;padding:8px 10px;border-radius:9px;}
+  .s-adv.buy{background:#eafaf0;color:var(--down);}
+  .s-adv.hold{background:#eef1f6;color:var(--navy);}
+  .s-adv.sell{background:#fdeaea;color:var(--up);}
+  .s-adv.warn{background:#fdf3e3;color:#b5791a;}
+
+  /* 持仓 */
+  .hold .h-row{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:10px;}
+  .stat{flex:1;min-width:130px;background:#f8fafc;border:1px solid var(--line);border-radius:11px;padding:10px 12px;}
+  .stat .k{font-size:12px;color:var(--sub);}
+  .stat .v{font-size:20px;font-weight:800;margin-top:2px;}
+  .bar{height:12px;background:#e6eaf0;border-radius:8px;overflow:hidden;margin:8px 0;}
+  .bar i{display:block;height:100%;}
+  .sugg{background:#f8fafc;border:1px solid var(--line);border-radius:11px;padding:12px;margin-top:8px;}
+  .sugg .lab{font-size:12px;color:var(--sub);}
+  .sugg .txt{font-size:14px;font-weight:700;margin:3px 0 8px;}
+  .sugg .risk{font-size:13px;color:var(--warn);}
+
+  .empty{text-align:center;color:var(--sub);padding:24px;font-size:14px;}
+  .banner{background:#fff8e6;border:1px solid #f0dca0;color:#8a6d1b;border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:10px;}
+
+  /* 移动端底部 tab */
+  @media(max-width:768px){
+    .wrap{padding:12px 12px 86px;}
+    nav.tabs{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);
+      margin:0;padding:8px 10px;z-index:50;box-shadow:0 -2px 12px rgba(20,40,80,.08);}
+    nav.tabs button{min-width:0;font-size:13px;padding:10px 4px;}
+    header{flex-direction:column;align-items:flex-start;}
+    .head-btns{width:100%;}
+    .btn{flex:1;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>金融早盘工作台</h1>
+      <div class="sub">夜盘行情 · 大V预测 · 个股追踪 · 持仓管理 · 离线可用</div>
+      <div class="upd" id="updTime">最后更新：—</div>
+    </div>
+    <div class="head-btns">
+      <button class="btn" onclick="exportJSON()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>导出JSON</button>
+      <button class="btn" onclick="importJSON()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9m0 0l-4 4m4-4l4 4M5 3h14"/></svg>导入恢复</button>
+      <button class="btn danger" onclick="clearAll()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V4h6v3m-7 0v13h8V7"/></svg>清空示例</button>
+      <button class="btn gold" id="refreshBtn" onclick="refreshQuotes()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M21 12a9 9 0 11-3-6.7M21 4v5h-5"/></svg>刷新行情</button>
+    </div>
+  </header>
+
+  <!-- 今日要处理 -->
+  <div class="alert-zone">
+    <div class="zone-title"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--warn)" stroke-width="2"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>今日要处理</div>
+    <div id="alertList"></div>
+  </div>
+
+  <!-- 导航 -->
+  <nav class="tabs">
+    <button class="active" data-tab="brief" onclick="switchTab('brief',this)">每日早盘简报</button>
+    <button data-tab="stocks" onclick="switchTab('stocks',this)">个股追踪</button>
+    <button data-tab="hold" onclick="switchTab('hold',this)">持仓管理</button>
+  </nav>
+
+  <!-- 简报 -->
+  <section class="panel active" id="brief">
+    <div class="card">
+      <h3>每日早盘简报 <span class="meta">夜盘行情 + 大V预测</span></h3>
+      <div id="briefBanner"></div>
+      <div class="filters">
+        <button class="on" data-cat="all" onclick="setCat(this)">全部市场</button>
+        <button data-cat="美股" onclick="setCat(this)">美股</button>
+        <button data-cat="欧股" onclick="setCat(this)">欧股</button>
+        <button data-cat="商品" onclick="setCat(this)">商品</button>
+        <button data-cat="A股" onclick="setCat(this)">A股</button>
+        <span class="spacer"></span>
+        <button class="on" data-type="all" onclick="setType(this)">全部</button>
+        <button data-type="night" onclick="setType(this)">夜盘</button>
+        <button data-type="predict" onclick="setType(this)">预测</button>
+        <select id="sortSel" onchange="renderBrief()">
+          <option value="desc">时间 ↓ 新→旧</option>
+          <option value="asc">时间 ↑ 旧→新</option>
+        </select>
+      </div>
+      <button class="btn primary" onclick="toggleBriefForm()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>添加一条简报</button>
+      <div class="addform" id="briefForm">
+        <div class="frow">
+          <input type="text" id="bTitle" placeholder="标题，如：美股三大指数收涨">
+          <select id="bCat">
+            <option value="美股">美股</option><option value="欧股">欧股</option>
+            <option value="商品">商品</option><option value="A股">A股</option>
+          </select>
+          <select id="bType">
+            <option value="night">夜盘行情</option><option value="predict">大V预测</option>
+          </select>
+        </div>
+        <div class="frow">
+          <input type="text" id="bDate" placeholder="日期 YYYY-MM-DD">
+          <input type="text" id="bSource" placeholder="来源/平台（预测必填）">
+          <input type="number" id="bConf" class="num" placeholder="置信度%" min="0" max="100">
+        </div>
+        <div class="frow">
+          <select id="bDir">
+            <option value="">方向（预测用）</option>
+            <option value="bull">看多/偏多</option><option value="bear">看空/偏空</option>
+          </select>
+        </div>
+        <textarea id="bContent" placeholder="内容，如：道指+0.8%、纳指+1.2%；科技股领涨。预测：大V认为早盘高开震荡。"></textarea>
+        <div class="frow" style="margin-top:8px;justify-content:flex-end;">
+          <button class="mini" onclick="toggleBriefForm()">取消</button>
+          <button class="btn primary" onclick="saveBrief()">保存</button>
+        </div>
+      </div>
+      <div id="briefList"></div>
+    </div>
+  </section>
+
+  <!-- 个股 -->
+  <section class="panel" id="stocks">
+    <div class="card">
+      <h3>重点个股追踪 <span class="meta">三七互娱 · 巨人网络 · 世纪华通</span></h3>
+      <div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <button class="btn primary" onclick="refreshQuotes()">获取实时行情</button>
+        <span style="font-size:12px;color:var(--sub)">数据源：东方财富公开接口（实时价）· 红涨绿跌</span>
+      </div>
+      <div class="stock-grid" id="stockGrid"></div>
+    </div>
+  </section>
+
+  <!-- 持仓 -->
+  <section class="panel" id="hold">
+    <div class="card hold">
+      <h3>持仓管理 <span class="meta">创业板ETF东财</span></h3>
+      <div id="holdBody"></div>
+    </div>
+  </section>
+</div>
+
+<input type="file" id="fileInput" accept="application/json" style="display:none" onchange="doImport(event)">
+
+<script>
+/* ============ 存储 ============ */
+const PX="wb_fin_";
+function getK(k,def){try{const v=localStorage.getItem(PX+k);return v?JSON.parse(v):def;}catch(e){return def;}}
+function setK(k,v){localStorage.setItem(PX+k,JSON.stringify(v));}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+function today(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+
+/* ============ 初始化示例数据 ============ */
+function seed(){
+  if(getK("seeded",false)) return;
+  const t=today();
+  const y=new Date(Date.now()-864e5); const yd=y.getFullYear()+"-"+String(y.getMonth()+1).padStart(2,"0")+"-"+String(y.getDate()).padStart(2,"0");
+  setK("digest",[
+    {id:uid(),date:yd,cat:"美股",type:"night",title:"美股三大指数收涨（昨日未读）",content:"道琼斯 +0.8%、纳斯达克 +1.2%、标普500 +0.9%；科技股领涨，市场情绪回暖。",source:"隔夜复盘",read:false},
+    {id:uid(),date:t,cat:"美股",type:"night",title:"美股三大指数小幅收高",content:"道指 +0.6%、纳指 +1.0%、标普 +0.7%；英伟达带动半导体板块。",source:"隔夜复盘",read:false},
+    {id:uid(),date:t,cat:"欧股",type:"night",title:"欧股主要指数温和上行",content:"泛欧Stoxx50 +0.5%、德国DAX +0.6%、法国CAC +0.4%。",source:"隔夜复盘",read:false},
+    {id:uid(),date:t,cat:"商品",type:"night",title:"大宗商品分化",content:"WTI原油 +1.5%（79.2美元）、布伦特 +1.3%；COMEX黄金 -0.3%（2345美元）；LME铜 +0.8%。",source:"隔夜复盘",read:false},
+    {id:uid(),date:t,cat:"A股",type:"predict",title:"大V「稳赢老周」：早盘高开震荡",content:"认为外围偏暖+政策预期，早盘大概率高开，但量能不足，午后回落概率大。",source:"雪球",direction:"bull",confidence:70,read:false},
+    {id:uid(),date:t,cat:"A股",type:"predict",title:"大V「量化小张」：偏空谨慎",content:"技术面创业板仍处下降通道，反弹减仓为主，不建议追高。",source:"雪球",direction:"bear",confidence:55,read:false}
+  ]);
+  setK("stocks",[
+    {id:uid(),name:"三七互娱",code:"002555",price:14.20,chg:1.8,alert:false,alertText:"",
+      news:[{date:t,type:"news",text:"新游《斗罗大陆：猎魂世界》上线首周流水超预期。"}],
+      note:"基本面：出海+AI降本逻辑仍在；技术面站上20日线。",adv:"hold",advText:"持有观察，关注20日线支撑"},
+    {id:uid(),name:"巨人网络",code:"002558",price:12.80,chg:-0.6,alert:false,alertText:"",
+      news:[{date:t,type:"ann",text:"发布半年度业绩预告，净利润同比+15%。"}],
+      note:"业绩稳健，估值合理；技术面横盘整理。",adv:"hold",advText:"持有，等待放量突破"},
+    {id:uid(),name:"世纪华通",code:"002602",price:6.50,chg:4.2,alert:true,alertText:"盘中异动拉升超4%，量能放大，疑似题材催化",
+      news:[{date:t,type:"sen",text:"舆情：市场传言公司获某头部车企AI合作意向，未证实。"}],
+      note:"异动需核实，避免追高接盘。",adv:"warn",advText:"异动观察，核实消息后再决策"}
+  ]);
+  setK("holding",{name:"创业板ETF东财",code:"159205",buyPrice:1.783,currentPrice:1.710,shares:10000,
+    trend:"创业板指中期仍处震荡，8月初随大盘反弹；159205 为东财发行创业板ETF，跟踪误差小。",
+    suggest:"成本1.783，当前价1.710，浮亏约4%。策略：未破位前持有观察，重回1.783上方解套再加仓；若跌破1.64（-8%）且放量，考虑减仓控风险。",
+    risk:"ETF跟踪创业板整体，系统性回撤与单一个股暴雷双重风险；建议仓位不超过总权益30%。",
+    decided:false});
+  setK("seeded",true);
+}
+
+/* ============ 今日要处理 ============ */
+function renderAlerts(){
+  const el=document.getElementById("alertList");
+  const items=[];
+  const h=getK("holding",null);
+  if(h && !h.decided){
+    const loss=(h.currentPrice-h.buyPrice)/h.buyPrice*100;
+    if(loss<=-8) items.push({tag:"持仓",txt:`${h.name} 当前亏损 ${loss.toFixed(1)}%，已进入加减仓决策观察区`,act:()=>{setK("holding",Object.assign({},h,{decided:true}));switchTab("hold",document.querySelector('[data-tab=hold]'));renderAll();},label:"去决策"});
+  }
+  const stocks=getK("stocks",[]);
+  stocks.forEach(s=>{ if(s.alert && !s.handled) items.push({tag:"异动",txt:`${s.name}(${s.code}) ${s.alertText}`,act:()=>{s.handled=true;setK("stocks",stocks);renderAll();},label:"已知悉"}); });
+  const dig=getK("digest",[]);
+  dig.filter(d=>!d.read && d.date<today()).forEach(d=> items.push({tag:"待读",txt:`${d.date} ${d.cat}简报未查看：${d.title}`,act:()=>{d.read=true;setK("digest",dig);renderAll();},label:"标记已读"}));
+
+  if(items.length===0){el.innerHTML='<div class="alert-card" style="border-left-color:#2E7D32"><span class="a-txt">✅ 暂无紧急待处理项，盘面平稳。</span></div>';return;}
+  el.innerHTML=items.map((it,i)=>`<div class="alert-card"><span><span class="a-tag">${it.tag}</span><span class="a-txt">${it.txt}</span></span><button class="a-handle" onclick="handleAlert(${i})">${it.label}</button></div>`).join("");
+  window.__alerts=items;
+}
+function handleAlert(i){window.__alerts[i].act();}
+
+/* ============ 简报 ============ */
+let curCat="all",curType="all";
+function setCat(b){curCat=b.dataset.cat;document.querySelectorAll('[data-cat]').forEach(x=>x.classList.remove('on'));b.classList.add('on');renderBrief();}
+function setType(b){curType=b.dataset.type;document.querySelectorAll('[data-type]').forEach(x=>x.classList.remove('on'));b.classList.add('on');renderBrief();}
+function toggleBriefForm(){const f=document.getElementById("briefForm");f.classList.toggle("show");if(f.classList.contains("show")){document.getElementById("bDate").value=today();}}
+function saveBrief(){
+  const title=document.getElementById("bTitle").value.trim();
+  const content=document.getElementById("bContent").value.trim();
+  if(!title||!content){alert("请填写标题与内容");return;}
+  const type=document.getElementById("bType").value;
+  const item={id:uid(),date:document.getElementById("bDate").value||today(),
+    cat:document.getElementById("bCat").value,type,title,content,
+    source:document.getElementById("bSource").value.trim()||"—",
+    direction:document.getElementById("bDir").value||"",
+    confidence:parseInt(document.getElementById("bConf").value)||0,read:false};
+  const d=getK("digest",[]);d.push(item);setK("digest",d);
+  document.getElementById("briefForm").classList.remove("show");
+  ["bTitle","bContent","bSource","bConf","bDir"].forEach(id=>document.getElementById(id).value="");
+  renderBrief();
+}
+function renderBrief(){
+  const d=getK("digest",[]);
+  const sort=document.getElementById("sortSel").value;
+  let list=d.filter(x=>(curCat==="all"||x.cat===curCat)&&(curType==="all"||x.type===curType));
+  list.sort((a,b)=>sort==="desc"?b.date.localeCompare(a.date):a.date.localeCompare(b.date));
+  const el=document.getElementById("briefList");
+  if(list.length===0){el.innerHTML='<div class="empty">暂无符合条件的简报，点上方"添加一条简报"。</div>';}
+  else{
+    el.innerHTML=list.map(x=>{
+      const catChip=`<span class="chip m-${x.cat==='美股'?'us':x.cat==='欧股'?'eu':x.cat==='商品'?'co':'cn'}">${x.cat}</span>`;
+      const typeChip=`<span class="chip t-${x.type}">${x.type==='night'?'夜盘行情':'大V预测'}</span>`;
+      let dirChip="",conf="";
+      if(x.type==='predict'){
+        if(x.direction)dirChip=`<span class="chip dir-${x.direction}">${x.direction==='bull'?'看多':'看空'}</span>`;
+        if(x.confidence)conf=`<span>置信度 ${x.confidence}% <span class="conf-bar"><i style="width:${x.confidence}%"></i></span></span>`;
+      }
+      return `<div class="item">
+        <div class="i-head">${catChip}${typeChip}${dirChip}<span class="i-date">${x.date}${x.read?'':' · 未读'}</span></div>
+        <div class="i-title">${x.title}</div>
+        <div class="i-content">${x.content}</div>
+        <div class="i-foot"><span>来源：${x.source}</span>${conf}
+          <span class="row-act"><button class="mini" onclick="markRead('${x.id}')">${x.read?'标未读':'标已读'}</button><button class="mini del" onclick="delBrief('${x.id}')">删除</button></span>
+        </div></div>`;
+    }).join("");
+  }
+  // 30条提示
+  const b=document.getElementById("briefBanner");
+  if(d.length>=30) b.innerHTML=`<div class="banner">⚠️ 简报已累计 ${d.length} 条，建议点击右上角"导出JSON"备份，避免本地数据丢失。</div>`;
+  else b.innerHTML="";
+}
+function markRead(id){const d=getK("digest",[]);const x=d.find(i=>i.id===id);if(x){x.read=!x.read;setK("digest",d);renderBrief();renderAlerts();}}
+function delBrief(id){if(!confirm("确认删除这条简报？"))return;const d=getK("digest",[]).filter(i=>i.id!==id);setK("digest",d);renderBrief();}
+
+/* ============ 个股 ============ */
+function addNews(id){
+  const txt=prompt("输入新闻/公告/舆情内容：");if(!txt)return;
+  const type=prompt("类型：输入 news=新闻 / ann=公告 / sen=舆情","news");
+  const t=type==="ann"?"ann":type==="sen"?"sen":"news";
+  const stocks=getK("stocks",[]);const s=stocks.find(x=>x.id===id);
+  s.news.unshift({date:today(),type:t,text:txt});setK("stocks",stocks);renderStocks();
+}
+function setAlert(id){
+  const stocks=getK("stocks",[]);const s=stocks.find(x=>x.id===id);
+  const on=!s.alert;const txt=on?prompt("异动说明：","盘中异动，量能放大"):"";
+  if(on&&!txt)return;
+  s.alert=on;s.handled=false;s.alertText=on?txt:"";setK("stocks",stocks);renderStocks();renderAlerts();
+}
+function updStock(id){
+  const stocks=getK("stocks",[]);const s=stocks.find(x=>x.id===id);
+  const p=prompt("更新最新价：",s.price);if(p===null)return;
+  const c=prompt("涨跌幅(%)：",s.chg);if(c===null)return;
+  s.price=parseFloat(p);s.chg=parseFloat(c);setK("stocks",stocks);renderStocks();
+}
+function renderStocks(){
+  const stocks=getK("stocks",[]);
+  document.getElementById("stockGrid").innerHTML=stocks.map(s=>{
+    const col=s.chg>=0?"var(--up)":"var(--down)";
+    const sign=s.chg>=0?"+":"";
+    const news=s.news.map(n=>`<div class="n-item"><span class="n-date">${n.date}</span><span class="n-type nt-${n.type}">${n.type==='news'?'新闻':n.type==='ann'?'公告':'舆情'}</span><span>${n.text}</span></div>`).join("");
+    const advc=s.adv==="buy"?"buy":s.adv==="sell"?"sell":s.adv==="warn"?"warn":"hold";
+    const advt=s.adv==="buy"?"建议：可考虑买入":s.adv==="sell"?"建议：减仓/回避":s.adv==="warn"?"建议：谨慎观察":"建议：持有观察";
+    return `<div class="stock">
+      <div class="s-top">
+        <div><div class="s-name">${s.name} ${s.alert?'<span class="badge">异动</span>':''}</div><div class="s-code">${s.code}</div></div>
+        <div style="text-align:right"><div class="s-price">${s.price.toFixed(2)}</div><div class="s-chg" style="color:${col}">${sign}${s.chg.toFixed(2)}%</div></div>
+      </div>
+      <div class="news">${news||'<div class="empty" style="padding:8px">暂无动态，点下方添加</div>'}</div>
+      <div class="s-note">${s.note}</div>
+      <div class="s-adv ${advc}">${advt}：${s.advText}</div>
+      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+        <button class="mini" onclick="updStock('${s.id}')">更新行情</button>
+        <button class="mini" onclick="addNews('${s.id}')">加动态</button>
+        <button class="mini ${s.alert?'del':''}" onclick="setAlert('${s.id}')">${s.alert?'取消异动':'标记异动'}</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ============ 持仓 ============ */
+function updHold(){
+  const h=getK("holding",{});
+  const p=prompt("更新当前净值/价：",h.currentPrice);if(p===null)return;
+  const sh=prompt("持仓份额（份）：",h.shares);if(sh===null)return;
+  h.currentPrice=parseFloat(p);h.shares=parseInt(sh);
+  setK("holding",h);renderHold();renderAlerts();
+}
+function renderHold(){
+  const h=getK("holding",{});if(!h.name){document.getElementById("holdBody").innerHTML='<div class="empty">暂无持仓</div>';return;}
+  const cost=h.buyPrice*h.shares;
+  const mv=h.currentPrice*h.shares;
+  const pl=mv-cost;
+  const plp=pl/cost*100;
+  const col=pl>=0?"var(--up)":"var(--down)";
+  const sign=pl>=0?"+":"";
+  // 亏损进度：0%亏损为绿，越亏越红，以-15%为满
+  const lossRatio=Math.min(Math.max((-plp)/15*100,0),100);
+  const barCol=lossRatio>66?"var(--up)":lossRatio>33?"#E68A00":"#2E7D32";
+  document.getElementById("holdBody").innerHTML=`
+    <div class="h-row">
+      <div class="stat"><div class="k">标的</div><div class="v" style="font-size:16px">${h.name}</div><div class="s-code">${h.code}</div></div>
+      <div class="stat"><div class="k">买入价</div><div class="v">${h.buyPrice.toFixed(3)}</div></div>
+      <div class="stat"><div class="k">当前价</div><div class="v">${h.currentPrice.toFixed(3)}</div></div>
+    </div>
+    <div class="h-row">
+      <div class="stat"><div class="k">持仓份额</div><div class="v">${h.shares.toLocaleString()}</div></div>
+      <div class="stat"><div class="k">持仓市值</div><div class="v">¥${mv.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
+      <div class="stat"><div class="k">浮动盈亏</div><div class="v" style="color:${col}">${sign}¥${pl.toLocaleString(undefined,{maximumFractionDigits:0})} (${sign}${plp.toFixed(1)}%)</div></div>
+    </div>
+    <div style="font-size:12px;color:var(--sub)">亏损进度（以-15%止损线为满）</div>
+    <div class="bar"><i style="width:${lossRatio}%;background:${barCol}"></i></div>
+    <div class="sugg">
+      <div class="lab">趋势分析</div><div class="txt">${h.trend}</div>
+      <div class="lab">操作建议</div><div class="txt" style="color:var(--navy)">${h.suggest}</div>
+      <div class="lab">风险提示</div><div class="risk">${h.risk}</div>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn primary" onclick="updHold()">更新净值/份额</button>
+      <button class="mini" onclick="editHold()">编辑建议文案</button>
+      <button class="mini" onclick="exportHoldCSV()">导出CSV</button>
+    </div>
+    <div style="margin-top:8px;font-size:12px;color:var(--sub)">${h.updTime?("实时价更新于："+h.updTime):"尚未拉取实时价，点顶部「刷新行情」"}</div>`;
+}
+function editHold(){
+  const h=getK("holding",{});
+  const trend=prompt("趋势分析：",h.trend);if(trend===null)return;
+  const suggest=prompt("操作建议：",h.suggest);if(suggest===null)return;
+  const risk=prompt("风险提示：",h.risk);if(risk===null)return;
+  h.trend=trend;h.suggest=suggest;h.risk=risk;setK("holding",h);renderHold();
+}
+function exportHoldCSV(){
+  const h=getK("holding",{});
+  const pl=(h.currentPrice-h.buyPrice)*h.shares;
+  const plp=pl/(h.buyPrice*h.shares)*100;
+  const csv=`标的,代码,买入价,当前价,份额,市值,浮动盈亏,盈亏%\n${h.name},${h.code},${h.buyPrice},${h.currentPrice},${h.shares},${h.currentPrice*h.shares},${pl.toFixed(2)},${plp.toFixed(2)}`;
+  download(csv,"持仓_"+today()+".csv");
+}
+
+/* ============ 备份 ============ */
+function exportJSON(){
+  const data={digest:getK("digest",[]),stocks:getK("stocks",[]),holding:getK("holding",{}),exported:today()};
+  download(JSON.stringify(data,null,2),"金融工作台备份_"+today()+".json");
+}
+function importJSON(){document.getElementById("fileInput").click();}
+function doImport(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{
+    const d=JSON.parse(r.result);
+    if(d.digest)setK("digest",d.digest);
+    if(d.stocks)setK("stocks",d.stocks);
+    if(d.holding)setK("holding",d.holding);
+    renderAll();alert("导入成功！");
+  }catch(err){alert("导入失败：文件格式错误");}};
+  r.readAsText(f);e.target.value="";
+}
+function download(content,name){
+  const blob=new Blob([content],{type:"application/octet-stream"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href);
+}
+function clearAll(){
+  if(!confirm("确认清空全部示例与数据？此操作不可恢复（建议先导出备份）。"))return;
+  ["digest","stocks","holding","seeded"].forEach(k=>localStorage.removeItem(PX+k));
+  seed();renderAll();alert("已重置为示例数据。");
+}
+
+/* ============ 自动晨报 ============ */
+// 尝试从一个 URL 载入晨报 JSON 并合并；成功返回新增条数，失败返回 -1
+async function tryLoadMorning(url){
+  try{
+    const res=await fetch(url,{cache:"no-store"});
+    if(!res.ok)return -1;
+    const arr=await res.json();
+    if(!Array.isArray(arr)||!arr.length)return -1;
+    const cur=getK("digest",[]);
+    const seen=new Set(cur.map(x=>(x.date||"")+"|"+(x.title||"")));
+    let added=0;
+    arr.forEach(x=>{
+      const key=(x.date||"")+"|"+(x.title||"");
+      if(!seen.has(key)){
+        cur.push(Object.assign({id:uid(),read:false,source:x.source||"晨报自动"},x));
+        seen.add(key);added++;
+      }
+    });
+    if(added>0)setK("digest",cur);
+    return added;
+  }catch(e){return -1;}
+}
+async function fetchMorning(){
+  // 候选源：1) 同源 morning-data.json（本地服务/GitHub Pages 均可用）；2) ?morning= 参数；3) jsDelivr CDN 兜底（CORS 放行）
+  const local="morning-data.json";
+  const remote=new URLSearchParams(location.search).get("morning");
+  const candidates=[local];
+  if(remote)candidates.push(remote);
+  else candidates.push("https://cdn.jsdelivr.net/gh/godliux/fin-workbench@main/morning-data.json");
+  let okUrl=null, added=-1;
+  for(const u of candidates){
+    const r=await tryLoadMorning(u);
+    if(r>=0){okUrl=u;added=r;break;}
+  }
+  const b=document.getElementById("briefBanner");
+  if(b){
+    if(okUrl){
+      const label=okUrl===local?"同源自动载入":("远端载入："+okUrl);
+      b.innerHTML='<div style="padding:8px 12px;border-radius:8px;margin:8px 0;font-size:13px;background:#e8f5e9;color:#1b5e20">晨报已'+label+(added>0?('，新增 '+added+' 条'):'，无新增')+'</div>';
+    }else{
+      b.innerHTML='<div style="padding:8px 12px;border-radius:8px;margin:8px 0;font-size:13px;background:#fff3e0;color:#b26a00">晨报未自动载入（同源/远端均无 morning-data.json）。可点顶部「导入恢复」手动上传，或地址栏加 ?morning=远端JSON地址 指定。</div>';
+    }
+  }
+  return added;
+}
+
+/* ============ 实时行情刷新（腾讯 qt.gtimg.cn 公开接口，已验证 CORS 放行） ============ */
+function gtCode(code){
+  if(!code)return "";
+  return (/^[69]/.test(code)?"sh":"sz")+code;
+}
+async function refreshQuotes(){
+  const stocks=getK("stocks",[]);
+  const h=getK("holding",null);
+  const codes=[];
+  stocks.forEach(s=>{if(s.code)codes.push(gtCode(s.code));});
+  if(h&&h.code)codes.push(gtCode(h.code));
+  if(!codes.length)return;
+  const url="https://qt.gtimg.cn/q="+codes.join(",");
+  const btn=document.getElementById("refreshBtn");
+  if(btn){btn.disabled=true;btn.innerHTML='刷新中…';}
+  try{
+    const res=await fetch(url,{cache:"no-store"});
+    if(!res.ok)throw new Error("HTTP"+res.status);
+    const txt=await res.text();
+    const re=/v_(\w+)="([^"]*)"/g; let m, n=0;
+    while((m=re.exec(txt))){
+      const code=m[1].toUpperCase();           // 如 SZ159205 / SZ002555
+      const f=m[2].split("~");
+      const price=parseFloat(f[3]);             // 当前价（实际值）
+      const chgPct=parseFloat(f[32]);           // 涨跌幅%
+      if(!(price>0))continue;
+      if(h&&h.code&&code.indexOf(h.code)>=0){
+        h.currentPrice=price; h.chg=chgPct;
+        h.updTime=new Date().toLocaleString("zh-CN");
+        setK("holding",h); n++;
+      }
+      const s=stocks.find(x=>x.code&&code.indexOf(x.code)>=0);
+      if(s){s.price=price;s.chg=chgPct;n++;}
+    }
+    setK("stocks",stocks);
+    document.getElementById("updTime").textContent="行情刷新："+new Date().toLocaleString("zh-CN")+(n?`（已更新 ${n} 项）`:"（无变化）");
+    renderStocks();renderHold();renderAlerts();
+  }catch(e){
+    document.getElementById("updTime").textContent="行情刷新失败：接口跨域或网络受限，可点个股卡「更新行情」手动填";
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M21 12a9 9 0 11-3-6.7M21 4v5h-5"/></svg>刷新行情';}
+  }
+}
+
+/* ============ 渲染 & Tab ============ */
+function switchTab(name,btn){
+  document.querySelectorAll("section.panel").forEach(s=>s.classList.remove("active"));
+  document.getElementById(name).classList.add("active");
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.remove("active"));
+  if(btn)btn.classList.add("active");
+  if(name==="brief")renderBrief();
+  if(name==="stocks")renderStocks();
+  if(name==="hold")renderHold();
+}
+function renderAll(){
+  document.getElementById("updTime").textContent="最后更新："+new Date().toLocaleString("zh-CN");
+  renderAlerts();renderBrief();renderStocks();renderHold();
+}
+seed();renderAll();
+// 数据迁移：持仓代码曾误用 159971（实为富国创业板ETF）→ 纠正为 159205（东财创业板ETF）；
+// 成本由占位值 1.617 纠正为用户实际成本 1.783
+(function migrate(){
+  const h=getK("holding",null); if(!h)return;
+  let changed=false;
+  if(h.code==="159971"){h.code="159205";changed=true;}
+  if(h.buyPrice===1.617){h.buyPrice=1.783;changed=true;}
+  if(changed){
+    h.trend="（标的已更正 159205 创业板ETF东财；成本已更新为1.783）实时数据接入中，趋势以刷新后为准。";
+    h.suggest="成本1.783，当前价以刷新为准。未破位前持有观察，重回1.783上方解套再加仓；若跌破1.64（-8%）且放量，考虑减仓控风险。";
+    h.risk="ETF跟踪创业板整体，系统性回撤风险；仓位建议不超总权益30%。";
+    setK("holding",h);
+  }
+})();
+// 自动读取晨报快照 morning-data.json；file:// 或未起服务时静默跳过
+fetchMorning().then(()=>{renderBrief();renderAlerts();});
+refreshQuotes(); // 打开即拉取实时行情（个股 + 持仓 159205）
+window.addEventListener("resize",()=>{});
+</script>
+</body>
+</html>
