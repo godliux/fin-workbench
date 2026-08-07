@@ -368,12 +368,12 @@ function renderBrief(){
   else{
     el.innerHTML=dates.map(dt=>{
       const items=byDate[dt].slice().sort((a,b)=>(order[a.period]??9)-(order[b.period]??9));
-      const pers=[...new Set(items.map(x=>x.period))].sort((a,b)=>(order[a]??9)-(order[b]??9)).join(" / ");
+      const pers=[...new Set(items.map(x=>x.period||"早盘"))].sort((a,b)=>(order[a]??9)-(order[b]??9)).join(" / ");
       const inner=items.map(x=>{
         const catChip=`<span class="chip m-${x.cat==='外围股市'?'out':x.cat==='商品'?'co':'cn'}">${x.cat}</span>`;
         const typeLabel=x.type==='night'?'隔夜行情':x.type==='predict'?'大V预测':'盘面汇总';
         const typeChip=`<span class="chip ${x.type==='predict'?'t-pred':x.type==='session'?'t-session':'t-night'}">${typeLabel}</span>`;
-        const perChip=`<span class="chip p-${x.period==='早盘'?'morning':x.period==='午盘'?'midday':'close'}">${x.period}</span>`;
+        const perChip=`<span class="chip p-${x.period==='早盘'?'morning':x.period==='午盘'?'midday':x.period==='结盘'?'close':'morning'}">${x.period||'早盘'}</span>`;
         let dirChip="",conf="";
         if(x.type==='predict'){
           if(x.direction)dirChip=`<span class="chip dir-${x.direction}">${x.direction==='bull'?'看多':'看空'}</span>`;
